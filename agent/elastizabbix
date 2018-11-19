@@ -8,11 +8,16 @@ import errno
 
 ttl = 60
 
+username = ''
+password = ''
+ip = ''
+port = ''
+
 stats = {
-    'cluster': 'http://localhost:9200/_cluster/stats',
-    'nodes'  : 'http://localhost:9200/_nodes/stats',
-    'indices': 'http://localhost:9200/_stats',
-    'health' : 'http://localhost:9200/_cluster/health'
+    'cluster': 'http://%s:%s/_cluster/stats' % (ip, port),
+    'nodes'  : 'http://%s:%s/_nodes/stats' % (ip, port),
+    'indices': 'http://%s:%s/_stats' % (ip, port),
+    'health' : 'http://%s:%s/_cluster/health' % (ip, port)
 }
 
 def created_file(name):
@@ -35,7 +40,10 @@ def get_cache(api):
     should_update = (not os.path.exists(cache)) or is_older_then(cache, ttl)
     if should_update and created_file(lock):
         try:
-            d = urllib2.urlopen(stats[api]).read()
+            auth = urllib2.Request(stats[api])
+            base64string = base64.b64encode('%s:%s' % (username, password))
+            auth.add_header("Authorization", "Basic %s" % base64string)
+            d = urllib2.urlopen(auth).read()
             with open(cache, 'w') as f: f.write(d)
         except Exception as e:
             pass        
